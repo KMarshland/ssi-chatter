@@ -1,0 +1,12 @@
+version: '3'
+services:
+  licode:
+    build: .
+    environment:
+      - MIN_PORT=30000
+      - MAX_PORT=30050
+    ports:
+      - "3000:3000"
+      - "30000-30050:30000-30050/udp"
+      - "3001:3001"
+      - "8080:8080"
