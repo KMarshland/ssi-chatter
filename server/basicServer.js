@@ -27,7 +27,6 @@ if (config.erizoController.sslCaCerts) {
 
 const app = express();
 
-// app.configure ya no existe
 app.use(errorhandler({
     dumpExceptions: true,
     showStack: true,
@@ -55,41 +54,47 @@ N.API.init(config.nuve.superserviceID, config.nuve.superserviceKey, 'http://loca
 let defaultRoom;
 const defaultRoomName = 'basicExampleRoom';
 
-const getOrCreateRoom = (name, type = 'erizo', mediaConfiguration = 'default',
-                         callback = () => {}) => {
-    if (name === defaultRoomName && defaultRoom) {
-        callback(defaultRoom);
-        return;
-    }
-
-    N.API.getRooms((roomlist) => {
-        let theRoom = '';
-        const rooms = JSON.parse(roomlist);
-        for (let i = 0; i < rooms.length; i += 1) {
-            const room = rooms[i];
-            if (room.name === name &&
-                room.data &&
-                room.data.basicExampleRoom) {
-                theRoom = room._id;
-                callback(theRoom);
-                return;
-            }
+function getOrCreateRoom(name, type = 'erizo', mediaConfiguration = 'default') {
+    return new Promise((resolve) => {
+        if (name === defaultRoomName && defaultRoom) {
+            resolve(defaultRoom);
+            return;
         }
-        const extra = { data: { basicExampleRoom: true }, mediaConfiguration };
-        if (type === 'p2p') extra.p2p = true;
 
-        N.API.createRoom(name, (roomID) => {
-            theRoom = roomID._id;
-            callback(theRoom);
-        }, () => {}, extra);
+        N.API.getRooms((roomlist) => {
+            const rooms = JSON.parse(roomlist);
+
+            for (let i = 0; i < rooms.length; i += 1) {
+                const room = rooms[i];
+                if (room.name === name) {
+                    resolve(room._id);
+                    return;
+                }
+            }
+
+            const extra = {
+                p2p: false,
+                data: {
+                    type
+                },
+                mediaConfiguration
+            };
+
+            if (type === 'p2p') extra.p2p = true;
+
+            N.API.createRoom(name, (roomID) => {
+                resolve(roomID._id);
+            }, () => {}, extra);
+        });
     });
-};
+}
 
-const deleteRoomsIfEmpty = (theRooms, callback) => {
+function deleteRoomsIfEmpty(theRooms, callback) {
     if (theRooms.length === 0) {
         callback(true);
         return;
     }
+
     const theRoomId = theRooms.pop()._id;
     N.API.getUsers(theRoomId, (userlist) => {
         const users = JSON.parse(userlist);
@@ -115,10 +120,10 @@ const deleteRoomsIfEmpty = (theRooms, callback) => {
                 break;
         }
     });
-};
+}
 
-const cleanExampleRooms = (callback) => {
-    console.log('Cleaning basic example rooms');
+function cleanExampleRooms(callback) {
+    console.log('Cleaning rooms');
     N.API.getRooms((roomlist) => {
         const rooms = JSON.parse(roomlist);
         const roomsToCheck = [];
@@ -133,7 +138,7 @@ const cleanExampleRooms = (callback) => {
             callback('done');
         });
     });
-};
+}
 
 app.get('/getRooms/', (req, res) => {
     N.API.getRooms((rooms) => {
@@ -178,7 +183,7 @@ app.post('/createToken/', (req, res) => {
     if (roomId) {
         createToken(roomId);
     } else {
-        getOrCreateRoom(room, type, mediaConfiguration, createToken);
+        getOrCreateRoom(room, type, mediaConfiguration).then(createToken);
     }
 });
 
@@ -195,7 +200,7 @@ app.use((req, res, next) => {
 });
 
 cleanExampleRooms(() => {
-    getOrCreateRoom(defaultRoomName, undefined, undefined, (roomId) => {
+    getOrCreateRoom(defaultRoomName).then((roomId) => {
         defaultRoom = roomId;
         app.listen(3001);
         const server = https.createServer(options, app);
