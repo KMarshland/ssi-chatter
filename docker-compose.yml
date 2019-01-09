@@ -2,10 +2,11 @@ version: '3'
 services:
   licode:
     build: .
-    environment:
-      - MIN_PORT=30000
-      - MAX_PORT=30050
-      - PUBLIC_IP=127.0.0.1
+#    environment:
+#      - MIN_PORT=30000
+#      - MAX_PORT=30050
+#      - PUBLIC_IP=127.0.0.1
+    network_mode: "host"
     ports:
 #      - "3000:3000"
       - "30000-30050:30000-30050/udp"

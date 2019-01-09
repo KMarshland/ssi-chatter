@@ -1,19 +1,39 @@
 server {
-    listen 80;
-
-    location / {
-        proxy_pass http://127.0.0.1:3001;
-    }
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name chatter.stanfordssi.org;
+    return 301 https://$server_name$request_uri;
 }
 
 server {
-    listen 443 ssl; # managed by Certbot
+    listen 443 ssl;
+
+    ssl on;
     ssl_certificate /etc/letsencrypt/live/chatter.stanfordssi.org/fullchain.pem; # managed by Certbot
     ssl_certificate_key /etc/letsencrypt/live/chatter.stanfordssi.org/privkey.pem; # managed by Certbot
     include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
 
+    location /socket.io/ {
+        proxy_pass http://localhost:8080/socket.io/;
+
+        proxy_http_version 1.1;
+        proxy_redirect off;
+
+        proxy_set_header 'Access-Control-Allow-Origin' '*';
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-NginX-Proxy true;
+        proxy_read_timeout 86400;
+    }
+
     location / {
-        proxy_pass http://127.0.0.1:3001;
+        proxy_pass http://localhost:3001/;
+        proxy_set_header Host $host;
+        proxy_http_version 1.1;
     }
 }
