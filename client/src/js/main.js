@@ -1,6 +1,8 @@
 import Erizo from './erizo';
 
-const SERVER_URL = 'http://localhost:3001/';
+const SERVER_URL = window.location.host === 'chatter.stanfordssi.org' ?
+    'https://chatter.stanfordssi.org/' :
+    'http://localhost:3001/';
 
 const MEDIA_CONFIG = {
     audio: true,

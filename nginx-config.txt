@@ -1,0 +1,19 @@
+server {
+    listen 80;
+
+    location / {
+        proxy_pass http://127.0.0.1:3001;
+    }
+}
+
+server {
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/chatter.stanfordssi.org/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/chatter.stanfordssi.org/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+    location / {
+        proxy_pass http://127.0.0.1:3001;
+    }
+}
